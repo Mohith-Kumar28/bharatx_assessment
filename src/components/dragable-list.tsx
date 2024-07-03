@@ -71,32 +71,20 @@ const Column = ({
       // Update the card's column property
       cardToMove = { ...cardToMove, column: newColumn as "folder" | "file" };
 
-      // Find the destination folder
-      const destinationFolder = copy.find((folder) => folder.id === before);
-      if (!destinationFolder || destinationFolder.column !== "folder") {
-        console.error("Destination is not a valid folder.");
-        return;
-      }
-
-      // Remove the card from its current position
       copy = copy.filter((c) => c.id !== cardId);
 
-      // Add the card to the destination folder's children
-      destinationFolder.children = destinationFolder.children || [];
-      destinationFolder.children.push(cardToMove);
+      const moveToBack = before === "-1";
 
-      // Optionally, remove the card from its original parent's children if applicable
-      const originalParent = cardToMove.parent;
-      if (originalParent) {
-        const index = originalParent?.children?.indexOf(cardToMove) || -1;
-        if (index > -1) {
-          if (index > -1) {
-            originalParent.children?.splice(index, 1);
-          }
-        }
+      if (moveToBack) {
+        copy.push(cardToMove);
+      } else {
+        const insertAtIndex = copy.findIndex((el) => el.id === before);
+        if (insertAtIndex === -1) return;
 
-        setCards(copy);
+        copy.splice(insertAtIndex, 0, cardToMove);
       }
+
+      setCards(copy);
     }
   };
 
@@ -360,7 +348,6 @@ interface CardType {
   id: string;
   column: "folder" | "file";
   children?: CardType[]; // Optional because a card can be a leaf node (file)
-  parent?: CardType; // New property to reference the parent card
 }
 
 const DEFAULT_CARDS: CardType[] = [
@@ -370,8 +357,12 @@ const DEFAULT_CARDS: CardType[] = [
     id: "1",
     column: "folder",
     children: [
-      { title: "Look into render bug in dashboard", id: "1.1", column: "file" },
-      { title: "SOX compliance checklist", id: "1.2", column: "file" },
+      {
+        title: "Look into render bug in dashboard",
+        id: "1.1",
+        column: "folder",
+      },
+      { title: "SOX compliance checklist", id: "1.2", column: "folder" },
       {
         title: "Sub Main Dashboard",
         id: "1.3",
@@ -382,7 +373,11 @@ const DEFAULT_CARDS: CardType[] = [
             id: "1.31",
             column: "file",
           },
-          { title: "Sub SOX compliance checklist", id: "1.32", column: "file" },
+          {
+            title: "Sub SOX compliance checklist",
+            id: "1.32",
+            column: "folder",
+          },
         ],
       },
     ],
