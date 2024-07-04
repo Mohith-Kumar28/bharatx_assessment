@@ -445,52 +445,46 @@ interface CardType {
   title: string;
   id: string; // Ensure this is always an integer
   column: string;
-  childrenIds?: string[];
+
   parentId?: string | null; // Optional parentId field
 }
 
 const DEFAULT_CARDS: CardType[] = [
   {
     title: "Main Dashboard",
-    id: "1",
+    id: "Main Dashboard", // Using title as ID
     column: "folder",
-    // childrenIds: ["11", "12"],
-    parentId: null, // Root element has no parent
+    parentId: null,
   },
   {
     title: "Look into render bug in dashboard",
-    id: "11",
+    id: "Look into render bug in dashboard", // Using title as ID
     column: "folder",
-    // childrenIds: ["13"],
-    parentId: "1", // Child of "Main Dashboard"
+    parentId: "Main Dashboard", // Adjusted to match new ID format
   },
   {
     title: "SOX compliance checklist",
-    id: "12",
+    id: "SOX compliance checklist", // Using title as ID
     column: "folder",
-    // childrenIds: [],
-    parentId: "1", // Child of "Main Dashboard"
+    parentId: "Main Dashboard", // Adjusted to match new ID format
   },
   {
     title: "Sub Main Dashboard",
-    id: "13",
+    id: "Sub Main Dashboard", // Using title as ID
     column: "folder",
-    // childrenIds: ["131", "132"],
-    parentId: "11", // Child of "Look into render bug in dashboard"
+    parentId: "Look into render bug in dashboard", // Adjusted to match new ID format
   },
   {
     title: "Sub Look into render bug in dashboard",
-    id: "131",
+    id: "Sub Look into render bug in dashboard", // Using title as ID
     column: "file",
-    // childrenIds: [],
-    parentId: "13", // Child of "Sub Main Dashboard"
+    parentId: "Sub Main Dashboard", // Adjusted to match new ID format
   },
   {
     title: "Sub SOX compliance checklist",
-    id: "13288888888888888888",
+    id: "Sub SOX compliance checklist", // Using title as ID
     column: "folder",
-    // childrenIds: [],
-    parentId: "13", // Child of "Sub Main Dashboard"
+    parentId: "Sub Main Dashboard", // Adjusted to match new ID format
   },
 ];
 
