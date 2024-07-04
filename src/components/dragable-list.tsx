@@ -329,6 +329,7 @@ const AddCard = ({ column, setCards }: AddCardProps) => {
       column,
       title: text.trim(),
       id: Math.random().toString(),
+      parentId: "1",
     };
 
     setCards((pv) => [...pv, newCard]);
