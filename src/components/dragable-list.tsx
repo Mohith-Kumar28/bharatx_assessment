@@ -31,8 +31,8 @@ const DragableList = () => {
 interface ColumnProps {
   title: string;
   headingColor: string;
-  cards: CardType[];
   column: "folder" | "file"; // Assuming 'column' can only be 'folder' or 'file'
+  cards: CardType[];
   setCards: React.Dispatch<React.SetStateAction<CardType[]>>;
 }
 
@@ -50,19 +50,22 @@ const Column = ({
   };
 
   const handleDragEnd = (e: React.DragEvent) => {
-    const cardId = e.dataTransfer.getData("cardId");
+    let copy = [...cards];
+    const currentCard = e.dataTransfer.getData("cardId");
     setActive(false);
     clearHighlights();
 
     const indicators = getIndicators();
     const { element } = getNearestIndicator(e, indicators);
 
-    const before = element?.dataset.before || "-1";
+    const nearestChildCardId = element?.dataset.nearestchildcardid;
+    let nearestChildCard = copy.find((c) => c.id === nearestChildCardId);
+    let nearestParentCard = copy.find(
+      (c) => c.id === nearestChildCard?.parentId
+    );
 
-    if (before !== cardId) {
-      let copy = [...cards];
-
-      let cardToMove = copy.find((c) => c.id === cardId);
+    if (nearestChildCardId !== currentCard) {
+      let cardToMove = copy.find((c) => c.id === currentCard);
       if (!cardToMove) return;
 
       // Update the column property based on the destination
@@ -71,18 +74,35 @@ const Column = ({
       // Update the card's column property
       cardToMove = { ...cardToMove, column: newColumn as "folder" | "file" };
 
-      copy = copy.filter((c) => c.id !== cardId);
+      copy = copy.filter((c) => c.id !== currentCard);
 
-      const moveToBack = before === "-1";
-
+      const moveToBack = nearestChildCardId === "-1";
       if (moveToBack) {
         copy.push(cardToMove);
       } else {
-        const insertAtIndex = copy.findIndex((el) => el.id === before);
+        const insertAtIndex = copy.findIndex(
+          (el) => el.id === nearestChildCardId
+        );
         if (insertAtIndex === -1) return;
 
         copy.splice(insertAtIndex, 0, cardToMove);
       }
+
+      // Update childrenIds and parentId of the moved card
+      cardToMove.childrenIds = nearestChildCardId ? [nearestChildCardId] : [];
+      cardToMove.parentId = nearestParentCard?.id;
+
+      // Update childrenIds of the new parent card
+      if (
+        nearestParentCard &&
+        !nearestParentCard.childrenIds?.includes(currentCard)
+      ) {
+        nearestParentCard.childrenIds = nearestParentCard.childrenIds?.concat([
+          currentCard,
+        ]);
+      }
+
+      console.log(copy);
 
       setCards(copy);
     }
@@ -150,14 +170,31 @@ const Column = ({
     setActive(false);
   };
 
-  const filteredCards = cards.filter((c) => c.column === column);
+  const rootNode = cards.find((c) => c.column === "root");
+  // const filteredCards = cards.filter((c) => c.column === column);
 
+  const renderCardAndChildren = (card?: CardType): JSX.Element => {
+    return (
+      <>
+        {card && (
+          <Card
+            key={card.id}
+            {...card}
+            cards={cards} // Pass the entire cards array to maintain the tree structure
+            setCards={setCards}
+            handleDragStart={handleDragStart}
+            childrenIds={card.childrenIds} // Pass childrenIds as a prop
+          />
+        )}{" "}
+      </>
+    );
+  };
   return (
     <div className="w-56 shrink-0">
       <div className="mb-3 flex items-center justify-between">
         <h3 className={`font-medium ${headingColor}`}>{title}</h3>
         <span className="rounded text-sm text-neutral-400">
-          {filteredCards.length}
+          {/* {filteredCards.length} */}
         </span>
       </div>
       <div
@@ -168,9 +205,7 @@ const Column = ({
           active ? "bg-neutral-800/50" : "bg-neutral-800/0"
         }`}
       >
-        {cards.map((c) => (
-          <Card key={c.id} {...c} handleDragStart={handleDragStart} />
-        ))}
+        {renderCardAndChildren(rootNode)}
         <DropIndicator beforeId={null} column={column} />
         <AddCard column={column} setCards={setCards} />
       </div>
@@ -180,14 +215,18 @@ const Column = ({
 
 interface CardProps extends Omit<CardType, "children"> {
   handleDragStart: (event: React.DragEvent, card: CardType) => void;
-  children?: CardType[]; // Add this line to include children in the props
+  children?: CardType[];
+  cards: CardType[];
+  setCards: React.Dispatch<React.SetStateAction<CardType[]>>;
 }
 
 const Card: React.FC<CardProps> = ({
   title,
   id,
   column,
-  children,
+  cards,
+  setCards,
+  childrenIds,
   handleDragStart,
 }) => {
   // Dynamically generate Tailwind CSS classes for padding and margin based on the depth
@@ -211,12 +250,25 @@ const Card: React.FC<CardProps> = ({
         }
         className="cursor-grab rounded border border-neutral-700 bg-neutral-800 p-3 active:cursor-grabbing "
       >
-        <p className="text-sm text-neutral-100 ">{title}</p>
+        <p className="text-sm text-neutral-100 ">{id}</p>
       </motion.div>
-      {children &&
-        children.map((child) => (
-          <Card key={child.id} {...child} handleDragStart={handleDragStart} />
-        ))}
+
+      {childrenIds &&
+        childrenIds.length > 0 &&
+        childrenIds.map((childId) => {
+          const child = cards.find((card) => card.id === childId);
+
+          return child ? (
+            <Card
+              key={child.id}
+              {...child}
+              childrenIds={child.childrenIds}
+              handleDragStart={handleDragStart}
+              cards={cards} // Pass cards down to child
+              setCards={setCards} // Pass setCards down to child
+            />
+          ) : null;
+        })}
     </div>
   );
 };
@@ -229,7 +281,7 @@ type DropIndicatorProps = {
 const DropIndicator = ({ beforeId, column }: DropIndicatorProps) => {
   return (
     <div
-      data-before={beforeId || "-1"}
+      data-nearestChildCardId={beforeId || "-1"}
       data-column={column}
       className="my-0.5 h-0.5 w-full bg-violet-400 opacity-0"
     />
@@ -345,45 +397,55 @@ type ColumnType = "folder" | "file";
 
 interface CardType {
   title: string;
-  id: string;
-  column: "folder" | "file";
-  children?: CardType[]; // Optional because a card can be a leaf node (file)
+  id: string; // Ensure this is always an integer
+  column: string;
+  childrenIds?: string[];
+  parentId?: string | null; // Optional parentId field
 }
 
 const DEFAULT_CARDS: CardType[] = [
-  // FOLDER
   {
     title: "Main Dashboard",
     id: "1",
-    column: "folder",
-    children: [
-      {
-        title: "Look into render bug in dashboard",
-        id: "1.1",
-        column: "folder",
-      },
-      { title: "SOX compliance checklist", id: "1.2", column: "folder" },
-      {
-        title: "Sub Main Dashboard",
-        id: "1.3",
-        column: "folder",
-        children: [
-          {
-            title: "Sub Look into render bug in dashboard",
-            id: "1.31",
-            column: "file",
-          },
-          {
-            title: "Sub SOX compliance checklist",
-            id: "1.32",
-            column: "folder",
-          },
-        ],
-      },
-    ],
+    column: "root",
+    childrenIds: ["11", "12"],
+    parentId: null, // Root element has no parent
   },
-  { title: "[SPIKE] Migrate to Azure", id: "2", column: "folder" },
-  { title: "Document Notifications service", id: "3", column: "folder" },
+  {
+    title: "Look into render bug in dashboard",
+    id: "11",
+    column: "folder",
+    childrenIds: ["13"],
+    parentId: "1", // Child of "Main Dashboard"
+  },
+  {
+    title: "SOX compliance checklist",
+    id: "12",
+    column: "folder",
+    childrenIds: [],
+    parentId: "1", // Child of "Main Dashboard"
+  },
+  {
+    title: "Sub Main Dashboard",
+    id: "13",
+    column: "folder",
+    childrenIds: ["131", "132"],
+    parentId: "11", // Child of "Look into render bug in dashboard"
+  },
+  {
+    title: "Sub Look into render bug in dashboard",
+    id: "131",
+    column: "file",
+    childrenIds: [],
+    parentId: "13", // Child of "Sub Main Dashboard"
+  },
+  {
+    title: "Sub SOX compliance checklist",
+    id: "132",
+    column: "folder",
+    childrenIds: [],
+    parentId: "13", // Child of "Sub Main Dashboard"
+  },
 ];
 
 export default DragableList;
