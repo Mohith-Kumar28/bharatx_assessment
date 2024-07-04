@@ -9,6 +9,7 @@ import React, {
 import { FiPlus, FiTrash } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { FaFire } from "react-icons/fa";
+import { toast, useToast } from "./ui/use-toast";
 
 const DragableList = () => {
   const [cards, setCards] = useState(DEFAULT_CARDS);
@@ -58,9 +59,11 @@ const FolderColumn = ({
     const indicators = getIndicators();
     const { element, isTargetDescendant } = getNearestIndicator(e, indicators);
 
-    console.log("Cannot drop onto a descendant.", isTargetDescendant);
     if (isTargetDescendant) {
-      // Log or handle the case where the target is a descendant of the dragged item
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Can't move parent folder to child",
+      });
       return;
     }
     const nearestChildCardId = element?.dataset.nearestchildcardid;
@@ -199,7 +202,7 @@ const FolderColumn = ({
     setActive(false);
   };
 
-  const rootNode = cards.find((c) => c.column === "root");
+  const rootNode = cards.find((c) => c.parentId == null);
   // const filteredCards = cards.filter((c) => c.column === column);
 
   const renderCardAndChildren = (card?: CardType): JSX.Element => {
@@ -219,7 +222,7 @@ const FolderColumn = ({
     );
   };
   return (
-    <div className="w-56 shrink-0">
+    <div className=" shrink-0">
       <div className="mb-3 flex items-center justify-between">
         <h3 className={`font-medium ${headingColor}`}>{title}</h3>
         <span className="rounded text-sm text-neutral-400">
@@ -236,7 +239,7 @@ const FolderColumn = ({
       >
         {renderCardAndChildren(rootNode)}
         <DropIndicator beforeId={null} column={column} />
-        <AddCard column={column} setCards={setCards} />
+        <AddCard cards={cards} column={column} setCards={setCards} />
       </div>
     </div>
   );
@@ -264,7 +267,7 @@ const Card: React.FC<CardProps> = ({
   const headerIndentClass = `ml-4`; // Example indentation for the header, adjust as needed
   const children = cards.filter((card) => card.parentId === id);
   return (
-    <div className="pl-6">
+    <div className="pl-6 border-y border-l border-neutral-800">
       <motion.div
         layout
         layoutId={id}
@@ -276,9 +279,12 @@ const Card: React.FC<CardProps> = ({
             column,
           })
         }
-        className="cursor-grab rounded border border-neutral-700 bg-neutral-800 p-3 active:cursor-grabbing "
+        className="cursor-grab rounded border border-neutral-700 bg-neutral-800 p-3 active:cursor-grabbing justify-between flex gap-3 group relative pr-16 "
       >
         <p className="text-sm text-neutral-100 ">{id}</p>
+        <div className="hidden group-hover:block absolute z-50 right-2 bg-violet-400  rounded-md">
+          <AddCard cards={cards} parentId={id} setCards={setCards} />
+        </div>
       </motion.div>
       <DropIndicator beforeId={id} column={column} />
       {children.length > 0 &&
@@ -352,11 +358,13 @@ const BurnBarrel = ({
 };
 
 type AddCardProps = {
-  column: ColumnType;
+  column?: ColumnType;
+  cards: CardType[];
+  parentId?: string;
   setCards: Dispatch<SetStateAction<CardType[]>>;
 };
 
-const AddCard = ({ column, setCards }: AddCardProps) => {
+const AddCard = ({ column, setCards, cards, parentId }: AddCardProps) => {
   const [text, setText] = useState("");
   const [adding, setAdding] = useState(false);
 
@@ -364,12 +372,22 @@ const AddCard = ({ column, setCards }: AddCardProps) => {
     e.preventDefault();
 
     if (!text.trim().length) return;
+    const existingCard = cards.find((card) => card.id === text);
+    if (existingCard) {
+      // Show an error message or alert to the user
+      // alert("A card with this ID already exists.");
+      toast({
+        variant: "destructive",
+        title: "A card with this name already exists.",
+      });
+      return;
+    }
 
     const newCard = {
-      column,
+      column: column ?? "folder",
       title: text.trim(),
-      id: Math.random().toString(),
-      parentId: "1",
+      id: text,
+      parentId: parentId ?? "1",
     };
 
     setCards((pv) => [...pv, newCard]);
@@ -380,12 +398,16 @@ const AddCard = ({ column, setCards }: AddCardProps) => {
   return (
     <>
       {adding ? (
-        <motion.form layout onSubmit={handleSubmit}>
+        <motion.form
+          onMouseLeave={() => setAdding(false)}
+          layout
+          onSubmit={handleSubmit}
+        >
           <textarea
             onChange={(e) => setText(e.target.value)}
             autoFocus
-            placeholder="Add new task..."
-            className="w-full rounded border border-violet-400 bg-violet-400/20 p-3 text-sm text-neutral-50 placeholder-violet-300 focus:outline-0"
+            placeholder="Add new folder..."
+            className="w-full rounded border border-violet-400 bg-violet-400/20 p-3 text-sm text-grey-800 placeholder-violet-800 focus:outline-0"
           />
           <div className="mt-1.5 flex items-center justify-end gap-1.5">
             <button
@@ -396,7 +418,7 @@ const AddCard = ({ column, setCards }: AddCardProps) => {
             </button>
             <button
               type="submit"
-              className="flex items-center gap-1.5 rounded bg-neutral-50 px-3 py-1.5 text-xs text-neutral-950 transition-colors hover:bg-neutral-300"
+              className="flex items-center gap-1.5 rounded bg-neutral-50 px-3 m-3 py-1.5 text-xs text-neutral-950 transition-colors hover:bg-neutral-300"
             >
               <span>Add</span>
               <FiPlus />
@@ -407,9 +429,9 @@ const AddCard = ({ column, setCards }: AddCardProps) => {
         <motion.button
           layout
           onClick={() => setAdding(true)}
-          className="flex w-full items-center gap-1.5 px-3 py-1.5 text-xs text-neutral-400 transition-colors hover:text-neutral-50"
+          className="flex  items-center gap-1.5 px-3 py-1.5 text-xs text-black transition-colors hover:text-grey-800"
         >
-          <span>Add card</span>
+          {/* <span>Add folder</span> */}
           <FiPlus />
         </motion.button>
       )}
@@ -431,7 +453,7 @@ const DEFAULT_CARDS: CardType[] = [
   {
     title: "Main Dashboard",
     id: "1",
-    column: "root",
+    column: "folder",
     // childrenIds: ["11", "12"],
     parentId: null, // Root element has no parent
   },
@@ -465,7 +487,7 @@ const DEFAULT_CARDS: CardType[] = [
   },
   {
     title: "Sub SOX compliance checklist",
-    id: "132",
+    id: "13288888888888888888",
     column: "folder",
     // childrenIds: [],
     parentId: "13", // Child of "Sub Main Dashboard"
