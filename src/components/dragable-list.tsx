@@ -183,7 +183,7 @@ const Column = ({
             cards={cards} // Pass the entire cards array to maintain the tree structure
             setCards={setCards}
             handleDragStart={handleDragStart}
-            childrenIds={card.childrenIds} // Pass childrenIds as a prop
+            parentId={card.id}
           />
         )}{" "}
       </>
@@ -226,14 +226,14 @@ const Card: React.FC<CardProps> = ({
   column,
   cards,
   setCards,
-  childrenIds,
+  parentId,
   handleDragStart,
 }) => {
   // Dynamically generate Tailwind CSS classes for padding and margin based on the depth
   // Assuming you have a way to determine the depth or simply using a fixed value for demonstration
   const indentClass = `pl-4`; // Example indentation, adjust as needed
   const headerIndentClass = `ml-4`; // Example indentation for the header, adjust as needed
-
+  const children = cards.filter((card) => card.parentId === id);
   return (
     <div className="pl-4">
       <DropIndicator beforeId={id} column={column} />
@@ -253,26 +253,17 @@ const Card: React.FC<CardProps> = ({
         <p className="text-sm text-neutral-100 ">{id}</p>
       </motion.div>
 
-      {childrenIds &&
-        childrenIds.length > 0 &&
-        childrenIds.map((childId) => {
-          const child = cards.find((card) => card.id === childId);
-
-          // Only render the child if it exists
-          if (child) {
-            return (
-              <Card
-                key={child.id}
-                {...child}
-                childrenIds={child.childrenIds}
-                handleDragStart={handleDragStart}
-                cards={cards} // Pass cards down to child
-                setCards={setCards} // Pass setCards down to child
-              />
-            );
-          }
-          return null;
-        })}
+      {children.length > 0 &&
+        children.map((child) => (
+          <Card
+            key={child.id}
+            {...child}
+            parentId={child.id} // Pass parentId to child
+            handleDragStart={handleDragStart}
+            cards={cards} // Pass cards down to child
+            setCards={setCards} // Pass setCards down to child
+          />
+        ))}
     </div>
   );
 };
