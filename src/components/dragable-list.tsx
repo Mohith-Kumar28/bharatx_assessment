@@ -15,7 +15,7 @@ const DragableList = () => {
 
   return (
     <div className="flex h-full w-full gap-3 overflow-auto p-12">
-      <Column
+      <FolderColumn
         title="Folders"
         column="folder"
         headingColor="text-neutral-500"
@@ -36,7 +36,7 @@ interface ColumnProps {
   setCards: React.Dispatch<React.SetStateAction<CardType[]>>;
 }
 
-const Column = ({
+const FolderColumn = ({
   title,
   headingColor,
   cards,
@@ -88,19 +88,8 @@ const Column = ({
         copy.splice(insertAtIndex, 0, cardToMove);
       }
 
-      // Update childrenIds and parentId of the moved card
-      cardToMove.childrenIds = nearestChildCardId ? [nearestChildCardId] : [];
-      cardToMove.parentId = nearestParentCard?.id;
-
-      // Update childrenIds of the new parent card
-      if (
-        nearestParentCard &&
-        !nearestParentCard.childrenIds?.includes(currentCard)
-      ) {
-        nearestParentCard.childrenIds = nearestParentCard.childrenIds?.concat([
-          currentCard,
-        ]);
-      }
+      // Update parentId of the moved card
+      cardToMove.parentId = nearestChildCard?.id;
 
       console.log(copy);
 
@@ -235,8 +224,7 @@ const Card: React.FC<CardProps> = ({
   const headerIndentClass = `ml-4`; // Example indentation for the header, adjust as needed
   const children = cards.filter((card) => card.parentId === id);
   return (
-    <div className="pl-4">
-      <DropIndicator beforeId={id} column={column} />
+    <div className="pl-6">
       <motion.div
         layout
         layoutId={id}
@@ -252,7 +240,7 @@ const Card: React.FC<CardProps> = ({
       >
         <p className="text-sm text-neutral-100 ">{id}</p>
       </motion.div>
-
+      <DropIndicator beforeId={id} column={column} />
       {children.length > 0 &&
         children.map((child) => (
           <Card
@@ -276,7 +264,7 @@ type DropIndicatorProps = {
 const DropIndicator = ({ beforeId, column }: DropIndicatorProps) => {
   return (
     <div
-      data-nearestChildCardId={beforeId || "-1"}
+      data-nearestchildcardid={beforeId || "-1"}
       data-column={column}
       className="my-0.5 h-0.5 w-full bg-violet-400 opacity-0"
     />
@@ -403,42 +391,42 @@ const DEFAULT_CARDS: CardType[] = [
     title: "Main Dashboard",
     id: "1",
     column: "root",
-    childrenIds: ["11", "12"],
+    // childrenIds: ["11", "12"],
     parentId: null, // Root element has no parent
   },
   {
     title: "Look into render bug in dashboard",
     id: "11",
     column: "folder",
-    childrenIds: ["13"],
+    // childrenIds: ["13"],
     parentId: "1", // Child of "Main Dashboard"
   },
   {
     title: "SOX compliance checklist",
     id: "12",
     column: "folder",
-    childrenIds: [],
+    // childrenIds: [],
     parentId: "1", // Child of "Main Dashboard"
   },
   {
     title: "Sub Main Dashboard",
     id: "13",
     column: "folder",
-    childrenIds: ["131", "132"],
+    // childrenIds: ["131", "132"],
     parentId: "11", // Child of "Look into render bug in dashboard"
   },
   {
     title: "Sub Look into render bug in dashboard",
     id: "131",
     column: "file",
-    childrenIds: [],
+    // childrenIds: [],
     parentId: "13", // Child of "Sub Main Dashboard"
   },
   {
     title: "Sub SOX compliance checklist",
     id: "132",
     column: "folder",
-    childrenIds: [],
+    // childrenIds: [],
     parentId: "13", // Child of "Sub Main Dashboard"
   },
 ];
