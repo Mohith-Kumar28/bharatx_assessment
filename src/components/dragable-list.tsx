@@ -486,7 +486,7 @@ const DEFAULT_CARDS: CardType[] = [
     parentId: "Sub Main Dashboard", // Adjusted to match new ID format
   },
   {
-    title: "Sub SOX compliance checklist",
+    title: "Sub SOX compliance checklist 1",
     id: "Sub SOX compliance checklist", // Using title as ID
     column: "folder",
     parentId: "Sub Main Dashboard", // Adjusted to match new ID format
