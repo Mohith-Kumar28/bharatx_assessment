@@ -56,8 +56,13 @@ const FolderColumn = ({
     clearHighlights();
 
     const indicators = getIndicators();
-    const { element } = getNearestIndicator(e, indicators);
+    const { element, isTargetDescendant } = getNearestIndicator(e, indicators);
 
+    console.log("Cannot drop onto a descendant.", isTargetDescendant);
+    if (isTargetDescendant) {
+      // Log or handle the case where the target is a descendant of the dragged item
+      return;
+    }
     const nearestChildCardId = element?.dataset.nearestchildcardid;
     let nearestChildCard = copy.find((c) => c.id === nearestChildCardId);
     let nearestParentCard = copy.find(
@@ -122,17 +127,23 @@ const FolderColumn = ({
     el.element.style.opacity = "1";
   };
 
-  const getNearestIndicator = (e: DragEvent, indicators: HTMLElement[]) => {
-    const DISTANCE_OFFSET = 50;
+  interface IndicatorResult {
+    offset: number;
+    element: HTMLElement;
+    isTargetDescendant: boolean;
+  }
 
+  const getNearestIndicator = (
+    e: React.DragEvent,
+    indicators: HTMLElement[]
+  ): IndicatorResult => {
     const el = indicators.reduce(
       (closest, child) => {
         const box = child.getBoundingClientRect();
-
-        const offset = e.clientY - (box.top + DISTANCE_OFFSET);
+        const offset = e.clientY - (box.top + 50); // Adjust the distance offset as needed
 
         if (offset < 0 && offset > closest.offset) {
-          return { offset: offset, element: child };
+          return { offset: offset, element: child, isTargetDescendant: false };
         } else {
           return closest;
         }
@@ -140,10 +151,39 @@ const FolderColumn = ({
       {
         offset: Number.NEGATIVE_INFINITY,
         element: indicators[indicators.length - 1],
+        isTargetDescendant: false,
       }
     );
 
-    return el;
+    // Check if the target element is a descendant of the dragged item
+    const isTargetDescendant = isDescendantOf(
+      el.element.getAttribute("data-nearestchildcardid") || "",
+      e.dataTransfer.getData("cardId") as string
+    );
+
+    return { ...el, isTargetDescendant }; // Return additional flag indicating if the target is a descendant
+  };
+
+  const isDescendantOf = (
+    targetCardId: string,
+    ancestorId: string
+  ): boolean => {
+    // Find the target card by its ID
+    const targetCard = cards.find((c) => c.id === targetCardId);
+
+    // Early return if the target card is not found
+    if (!targetCard) return false;
+
+    // Base case: If the target card has no parent, it cannot be a descendant of any other card.
+    if (!targetCard.parentId) return false;
+
+    // Check if the target card's parentId matches the ancestorId
+    if (targetCard.parentId === ancestorId) {
+      return true;
+    }
+
+    // Recursively call isDescendantOf on the parent card
+    return isDescendantOf(targetCard.parentId, ancestorId);
   };
 
   const getIndicators = () => {
