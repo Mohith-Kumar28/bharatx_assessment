@@ -216,6 +216,7 @@ const FolderColumn = ({
             setCards={setCards}
             handleDragStart={handleDragStart}
             parentId={card.id}
+            rootNode={true}
           />
         )}{" "}
       </>
@@ -249,6 +250,7 @@ interface CardProps extends Omit<CardType, "children"> {
   handleDragStart: (event: React.DragEvent, card: CardType) => void;
   children?: CardType[];
   cards: CardType[];
+  rootNode?: boolean;
   setCards: React.Dispatch<React.SetStateAction<CardType[]>>;
 }
 
@@ -259,6 +261,7 @@ const Card: React.FC<CardProps> = ({
   cards,
   setCards,
   parentId,
+  rootNode,
   handleDragStart,
 }) => {
   // Dynamically generate Tailwind CSS classes for padding and margin based on the depth
@@ -271,7 +274,7 @@ const Card: React.FC<CardProps> = ({
       <motion.div
         layout
         layoutId={id}
-        draggable="true"
+        draggable={rootNode ? "false" : "true"}
         onDragStart={(e) =>
           handleDragStart(e as unknown as React.DragEvent, {
             title,
@@ -279,7 +282,9 @@ const Card: React.FC<CardProps> = ({
             column,
           })
         }
-        className="cursor-grab rounded border border-neutral-700 bg-neutral-800 p-3 active:cursor-grabbing justify-between flex gap-3 group relative pr-16 "
+        className={` rounded border border-neutral-700 bg-neutral-800 p-3  ${
+          !rootNode && "cursor-grab active:cursor-grabbing"
+        } justify-between flex gap-3 group relative pr-16 `}
       >
         <p className="text-sm text-neutral-100 ">{id}</p>
         <div className="hidden group-hover:block absolute z-50 right-2 bg-violet-400  rounded-md">
