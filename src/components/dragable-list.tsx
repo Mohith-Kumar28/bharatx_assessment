@@ -258,16 +258,20 @@ const Card: React.FC<CardProps> = ({
         childrenIds.map((childId) => {
           const child = cards.find((card) => card.id === childId);
 
-          return child ? (
-            <Card
-              key={child.id}
-              {...child}
-              childrenIds={child.childrenIds}
-              handleDragStart={handleDragStart}
-              cards={cards} // Pass cards down to child
-              setCards={setCards} // Pass setCards down to child
-            />
-          ) : null;
+          // Only render the child if it exists
+          if (child) {
+            return (
+              <Card
+                key={child.id}
+                {...child}
+                childrenIds={child.childrenIds}
+                handleDragStart={handleDragStart}
+                cards={cards} // Pass cards down to child
+                setCards={setCards} // Pass setCards down to child
+              />
+            );
+          }
+          return null;
         })}
     </div>
   );
