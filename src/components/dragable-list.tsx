@@ -234,13 +234,13 @@ const FolderColumn = ({
         onDrop={handleDragEnd}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        className={`h-full w-full transition-colors ${
+        className={` transition-colors ${
           active ? "bg-neutral-800/50" : "bg-neutral-800/0"
         }`}
       >
         {renderCardAndChildren(rootNode)}
         <DropIndicator beforeId={null} column={column} />
-        <AddCard cards={cards} column={column} setCards={setCards} />
+        {/* <AddCard cards={cards} column={column} setCards={setCards} /> */}
       </div>
     </div>
   );
