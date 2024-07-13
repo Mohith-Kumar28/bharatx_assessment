@@ -10,20 +10,28 @@ import { FiPlus, FiTrash } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { FaFire } from "react-icons/fa";
 import { toast, useToast } from "./ui/use-toast";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "./ui/accordion";
+import { ScrollArea } from "./ui/scroll-area";
 
 const DragableList = () => {
   const [cards, setCards] = useState(DEFAULT_CARDS);
 
   return (
-    <div className="flex h-full w-full gap-3 overflow-auto p-12">
-      <FolderColumn
-        title="Folders"
-        column="folder"
-        headingColor="text-neutral-500"
-        cards={cards}
-        setCards={setCards}
-      />
-
+    <div className="flex  w-full gap-3  overflow-auto ">
+      <div className="flex h-screen  gap-3 sticky top-0 left-0 bg-zinc-900 overflow-x-auto p-0">
+        <FolderColumn
+          title="BharatX folders"
+          column="folder"
+          headingColor="text-neutral-500"
+          cards={cards}
+          setCards={setCards}
+        />
+      </div>
       <BurnBarrel setCards={setCards} />
     </div>
   );
@@ -75,9 +83,9 @@ const FolderColumn = ({
     if (nearestChildCardId !== currentCard) {
       let cardToMove = copy.find((c) => c.id === currentCard);
       if (!cardToMove) return;
-
+      console.log(cardToMove);
       // Update the column property based on the destination
-      const newColumn = element?.dataset.column || column; // Default to current column if not specified
+      const newColumn = cardToMove.column; // Default to current column if not specified
 
       // Update the card's column property
       cardToMove = { ...cardToMove, column: newColumn as "folder" | "file" };
@@ -208,17 +216,21 @@ const FolderColumn = ({
   const renderCardAndChildren = (card?: CardType): JSX.Element => {
     return (
       <>
+        {/* <Accordion type="single" collapsible className="w-full"> */}
         {card && (
-          <Card
-            key={card.id}
-            {...card}
-            cards={cards} // Pass the entire cards array to maintain the tree structure
-            setCards={setCards}
-            handleDragStart={handleDragStart}
-            parentId={card.id}
-            rootNode={true}
-          />
+          <div className="relative">
+            <Card
+              key={card.id}
+              {...card}
+              cards={cards} // Pass the entire cards array to maintain the tree structure
+              setCards={setCards}
+              handleDragStart={handleDragStart}
+              parentId={card.id}
+              rootNode={true}
+            />
+          </div>
         )}{" "}
+        {/* </Accordion> */}
       </>
     );
   };
@@ -270,40 +282,64 @@ const Card: React.FC<CardProps> = ({
   const headerIndentClass = `ml-4`; // Example indentation for the header, adjust as needed
   const children = cards.filter((card) => card.parentId === id);
   return (
-    <div className="pl-6 border-y border-l border-neutral-800">
-      <motion.div
-        layout
-        layoutId={id}
-        draggable={rootNode ? "false" : "true"}
-        onDragStart={(e) =>
-          handleDragStart(e as unknown as React.DragEvent, {
-            title,
-            id,
-            column,
-          })
-        }
-        className={` rounded border border-neutral-700 bg-neutral-800 p-3  ${
-          !rootNode && "cursor-grab active:cursor-grabbing"
-        } justify-between flex gap-3 group relative pr-16 `}
-      >
-        <p className="text-sm text-neutral-100 ">{id}</p>
-        <div className="hidden group-hover:block absolute z-50 right-2 bg-violet-400  rounded-md">
-          <AddCard cards={cards} parentId={id} setCards={setCards} />
-        </div>
-      </motion.div>
-      <DropIndicator beforeId={id} column={column} />
-      {children.length > 0 &&
-        children.map((child) => (
-          <Card
-            key={child.id}
-            {...child}
-            parentId={child.id} // Pass parentId to child
-            handleDragStart={handleDragStart}
-            cards={cards} // Pass cards down to child
-            setCards={setCards} // Pass setCards down to child
-          />
-        ))}
-    </div>
+    <>
+      <div className="absolute z-0 w-full h-8 left-0 hover:bg-zinc-800  duration-300"></div>
+      <div className="ml-4 relative z-10 ">
+        <Accordion type="multiple">
+          <AccordionItem className="" value={id}>
+            <AccordionTrigger
+              isFolder={column == "folder" ? true : false}
+              draggable={rootNode ? "false" : "true"}
+              className="cursor-grab"
+              onDragStart={(e) =>
+                handleDragStart(e as unknown as React.DragEvent, {
+                  title,
+                  id,
+                  column,
+                })
+              }
+            >
+              <motion.div
+                layout
+                layoutId={id}
+                className={`${
+                  !rootNode && "  cursor-grab active:cursor-grabbing"
+                } justify-between  flex gap-3 group relative pr-16 `}
+              >
+                <p className="text-sm text-neutral-100 ">{id}</p>
+                {/* Only show the AddCard dropdown if the column is a folder */}
+                {column === "folder" && (
+                  <div className="hidden group-hover:block absolute z-50 right-2 bg-violet-400 rounded-md">
+                    <AddCard cards={cards} parentId={id} setCards={setCards} />
+                  </div>
+                )}
+              </motion.div>
+            </AccordionTrigger>
+            <DropIndicator beforeId={id} column={column} />
+
+            <AccordionContent>
+              {/* Content goes here */}
+              {children.length > 0 &&
+                children.map((child) => (
+                  <Card
+                    key={child.id}
+                    {...child}
+                    parentId={child.id} // Pass parentId to child
+                    handleDragStart={handleDragStart}
+                    cards={cards} // Pass cards down to child
+                    setCards={setCards} // Pass setCards down to child
+                  />
+                ))}
+              {children.length == 0 && (
+                <div className=" pl-12 pb-1 text-gray-400 font-semibold">
+                  no data{" "}
+                </div>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
+    </>
   );
 };
 
